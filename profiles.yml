@@ -1,0 +1,33 @@
+caldemo_dw:
+  target: dev
+  outputs:
+    dev:
+      type: snowflake
+      account: gp73525.east-us.azure
+      user: DEEPAK_KR
+      role: OPENFLOW_ADMIN
+      database: FACETS_DEV
+      warehouse: OPENFLOW_MERGE_WH
+      schema: SILVER
+      threads: 4
+      password: "AdminSnowAcn2026"
+    qa:
+      type: snowflake
+      account: gp73525.east-us.azure
+      user: DEEPAK_KR
+      role: OPENFLOW_ADMIN
+      database: FACETS_QA
+      warehouse: OPENFLOW_MERGE_WH
+      schema: SILVER
+      threads: 4
+      password: "AdminSnowAcn2026"
+    prod:
+      type: snowflake
+      account: gp73525.east-us.azure
+      user: DEEPAK_KR
+      role: OPENFLOW_ADMIN
+      database: FACETS_PROD
+      warehouse: OPENFLOW_MERGE_WH
+      schema: SILVER
+      threads: 4
+      password: "AdminSnowAcn2026"
