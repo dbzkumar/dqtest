@@ -10,7 +10,7 @@ caldemo_dw:
       warehouse: OPENFLOW_MERGE_WH
       schema: SILVER
       threads: 4
-      password: "AdminSnowAcn2026"
+      password: "{{ env_var('SNOWFLAKE_PASSWORD') }}"
     qa:
       type: snowflake
       account: gp73525.east-us.azure
@@ -20,7 +20,7 @@ caldemo_dw:
       warehouse: OPENFLOW_MERGE_WH
       schema: SILVER
       threads: 4
-      password: "AdminSnowAcn2026"
+      password: "{{ env_var('SNOWFLAKE_PASSWORD') }}"
     prod:
       type: snowflake
       account: gp73525.east-us.azure
@@ -30,4 +30,4 @@ caldemo_dw:
       warehouse: OPENFLOW_MERGE_WH
       schema: SILVER
       threads: 4
-      password: "AdminSnowAcn2026"
+      password: "{{ env_var('SNOWFLAKE_PASSWORD') }}"
