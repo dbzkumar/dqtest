@@ -1,5 +1,5 @@
 -- Alert: fires when FACETS_INCREMENTAL_TASK has not succeeded within 20 minutes.
--- Requires a notification integration (email or webhook) to be pre-created.
+-- Requires a notification integration (email or webhook) to be pre-created. Deepak test
 
 -- Step 1: Create an email notification integration (run once as ACCOUNTADMIN)
 -- CREATE NOTIFICATION INTEGRATION IF NOT EXISTS CDC_EMAIL_NOTIF

@@ -13,8 +13,7 @@ This folder contains a scaffolded dbt project for the `caldemo_dw` workspace.
 - `snapshots/` — dbt snapshots
 - `tests/` — dbt tests
 
-## Next steps
-
+## Next steps #Deepak Kumar
 1. Update `profiles.yml` with your Snowflake connection values.
 2. Add your models under `models/`.
 3. Run `dbt debug` from `caldemo_dw/` to verify the project.
