@@ -1,0 +1,50 @@
+name: Deploy to QA
+
+on:
+  push:
+    branches: [ master ]      # deploy to QA when a PR merges to master
+  workflow_dispatch: {}        # + a manual "Run workflow" button
+
+concurrency:                   # if two merges land fast, cancel the older run
+  group: qa-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy-qa:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: caldemo_dw    # <-- keep if dbt_project.yml is in this subfolder; DELETE these 3 lines if it's at the repo root
+    env:
+      SNOWFLAKE_ACCOUNT:          ${{ secrets.SNOWFLAKE_ACCOUNT }}
+      SNOWFLAKE_USER:             ${{ secrets.SNOWFLAKE_USER }}
+      SNOWFLAKE_ROLE:             ${{ secrets.SNOWFLAKE_ROLE }}
+      SNOWFLAKE_WAREHOUSE:        ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+      SNOWFLAKE_DATABASE:         ${{ secrets.SNOWFLAKE_DATABASE }}
+      SNOWFLAKE_SCHEMA:           ${{ secrets.SNOWFLAKE_SCHEMA }}
+      SNOWFLAKE_PRIVATE_KEY_PATH: ./rsa_key.p8
+      DBT_PROFILES_DIR:           .
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dbt
+        run: pip install "dbt-snowflake==1.8.*"
+
+      - name: Write Snowflake private key
+        run: printf '%s' "${{ secrets.SNOWFLAKE_PRIVATE_KEY }}" > ./rsa_key.p8
+
+      - name: dbt deps
+        run: dbt deps
+
+      - name: Verify connection
+        run: dbt debug --target qa
+
+      - name: Build models + tests in QA
+        run: dbt build --target qa
