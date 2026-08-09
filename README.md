@@ -1,6 +1,6 @@
 # caldemo_dw dbt project
 
-This folder contains a scaffolded dbt project for the `caldemo_dw` workspace. DEEPAK Added for test
+This folder contains a scaffolded dbt project for the `caldemo_dw` workspace. SG Added for DEMO
 
 ## Structure
 
