@@ -1,43 +1,50 @@
 name: Deploy
 
 on:
+  pull_request:
+    branches: [ master ]     # CI validation on PRs
   push:
-    branches: [ master ]
+    branches: [ master ]     # QA deploy on merge
   workflow_dispatch: {}
 
 jobs:
-  deploy-qa:
+  ci-validate:
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    env:
-      SNOWFLAKE_PRIVATE_KEY_PATH: ./rsa_key.p8
-      DBT_PROFILES_DIR: .
+    env: { SNOWFLAKE_PRIVATE_KEY_PATH: ./rsa_key.p8, DBT_PROFILES_DIR: . }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
+        with: { python-version: "3.11" }
       - run: pip install "dbt-snowflake==1.8.*"
-      - name: Write Snowflake private key
-        run: printf '%s' "${{ secrets.SNOWFLAKE_PRIVATE_KEY }}" > ./rsa_key.p8
+      - run: printf '%s' "${{ secrets.SNOWFLAKE_PRIVATE_KEY }}" > ./rsa_key.p8
       - run: dbt deps
-      - run: dbt debug --target qa
+      - run: dbt build --target ci        # <-- builds into the CI schema
+
+  deploy-qa:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    env: { SNOWFLAKE_PRIVATE_KEY_PATH: ./rsa_key.p8, DBT_PROFILES_DIR: . }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install "dbt-snowflake==1.8.*"
+      - run: printf '%s' "${{ secrets.SNOWFLAKE_PRIVATE_KEY }}" > ./rsa_key.p8
+      - run: dbt deps
       - run: dbt build --target qa
 
   deploy-prod:
-    needs: deploy-qa           # only starts after QA succeeds
+    needs: deploy-qa
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
-    environment: production     # <-- the approval gate lives here
-    env:
-      SNOWFLAKE_PRIVATE_KEY_PATH: ./rsa_key.p8
-      DBT_PROFILES_DIR: .
+    environment: production
+    env: { SNOWFLAKE_PRIVATE_KEY_PATH: ./rsa_key.p8, DBT_PROFILES_DIR: . }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
+        with: { python-version: "3.11" }
       - run: pip install "dbt-snowflake==1.8.*"
-      - name: Write Snowflake private key
-        run: printf '%s' "${{ secrets.SNOWFLAKE_PRIVATE_KEY }}" > ./rsa_key.p8
+      - run: printf '%s' "${{ secrets.SNOWFLAKE_PRIVATE_KEY }}" > ./rsa_key.p8
       - run: dbt deps
-      - run: dbt debug --target prod
       - run: dbt build --target prod
