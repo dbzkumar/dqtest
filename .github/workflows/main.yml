@@ -2,49 +2,69 @@ name: Deploy
 
 on:
   pull_request:
-    branches: [ master ]     # CI validation on PRs
+    branches: [ master ]      # CI validation on PRs
   push:
-    branches: [ master ]     # QA deploy on merge
-  workflow_dispatch: {}
+    branches: [ master ]      # QA deploy on merge to master
+  workflow_dispatch: {}        # manual run button
 
 jobs:
+  # ---------- CI: validate the PR in the isolated CI database ----------
   ci-validate:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    env: { SNOWFLAKE_PRIVATE_KEY_PATH: ./rsa_key.p8, DBT_PROFILES_DIR: . }
+    environment: ci                        # -> SVC_DBT_DEV key (FACETS_CI)
+    env:
+      SNOWFLAKE_PRIVATE_KEY_PATH: ./rsa_key.p8
+      DBT_PROFILES_DIR: .
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with: { python-version: "3.11" }
+        with:
+          python-version: "3.11"
       - run: pip install "dbt-snowflake==1.8.*"
-      - run: printf '%s' "${{ secrets.SNOWFLAKE_PRIVATE_KEY }}" > ./rsa_key.p8
+      - name: Write Snowflake private key
+        run: printf '%s' "${{ secrets.SNOWFLAKE_PRIVATE_KEY }}" > ./rsa_key.p8
       - run: dbt deps
-      - run: dbt build --target ci        # <-- builds into the CI schema
+      - run: dbt debug --target ci
+      - run: dbt build --target ci
 
+  # ---------- QA: deploy on merge to master ----------
   deploy-qa:
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
-    env: { SNOWFLAKE_PRIVATE_KEY_PATH: ./rsa_key.p8, DBT_PROFILES_DIR: . }
+    environment: qa                        # -> SVC_DBT_QA key (FACETS_QA)
+    env:
+      SNOWFLAKE_PRIVATE_KEY_PATH: ./rsa_key.p8
+      DBT_PROFILES_DIR: .
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with: { python-version: "3.11" }
+        with:
+          python-version: "3.11"
       - run: pip install "dbt-snowflake==1.8.*"
-      - run: printf '%s' "${{ secrets.SNOWFLAKE_PRIVATE_KEY }}" > ./rsa_key.p8
+      - name: Write Snowflake private key
+        run: printf '%s' "${{ secrets.SNOWFLAKE_PRIVATE_KEY }}" > ./rsa_key.p8
       - run: dbt deps
+      - run: dbt debug --target qa
       - run: dbt build --target qa
 
+  # ---------- PROD: gated, only after QA succeeds ----------
   deploy-prod:
     needs: deploy-qa
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
-    environment: production
-    env: { SNOWFLAKE_PRIVATE_KEY_PATH: ./rsa_key.p8, DBT_PROFILES_DIR: . }
+    environment: production                # -> SVC_DBT_PROD key + approval gate
+    env:
+      SNOWFLAKE_PRIVATE_KEY_PATH: ./rsa_key.p8
+      DBT_PROFILES_DIR: .
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with: { python-version: "3.11" }
+        with:
+          python-version: "3.11"
       - run: pip install "dbt-snowflake==1.8.*"
-      - run: printf '%s' "${{ secrets.SNOWFLAKE_PRIVATE_KEY }}" > ./rsa_key.p8
+      - name: Write Snowflake private key
+        run: printf '%s' "${{ secrets.SNOWFLAKE_PRIVATE_KEY }}" > ./rsa_key.p8
       - run: dbt deps
+      - run: dbt debug --target prod
       - run: dbt build --target prod
