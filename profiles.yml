@@ -11,7 +11,7 @@ caldemo_dw:
       schema: SILVER
       threads: 4
       password: "{{ env_var('SNOWFLAKE_PASSWORD') }}"
-      ci:
+    ci:
       type: snowflake
       account: gp73525.east-us.azure
       user: SVC_DBT_DEV
