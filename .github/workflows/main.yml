@@ -4,15 +4,20 @@ on:
   pull_request:
     branches: [ master ]      # CI validation on PRs
   push:
-    branches: [ master ]      # QA deploy on merge to master
-  workflow_dispatch: {}        # manual run button
+    branches: [ master ]      # QA + gated PROD on merge to master
+  workflow_dispatch:           # manual run / tag-based rollback
+    inputs:
+      ref:
+        description: "Git ref to deploy (a tag like prod-YYYYMMDD-HHMMSS for rollback)"
+        required: false
+        default: ""
 
 jobs:
   # ---------- CI: validate the PR in the isolated CI database ----------
   ci-validate:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    environment: ci                        # -> SVC_DBT_DEV key (FACETS_CI)
+    environment: ci                         # -> SVC_DBT_DEV key (FACETS_CI)
     env:
       SNOWFLAKE_PRIVATE_KEY_PATH: ./rsa_key.p8
       DBT_PROFILES_DIR: .
@@ -28,16 +33,18 @@ jobs:
       - run: dbt debug --target ci
       - run: dbt build --target ci
 
-  # ---------- QA: deploy on merge to master ----------
+  # ---------- QA: deploy on merge to master (or manual/rollback) ----------
   deploy-qa:
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
-    environment: qa                        # -> SVC_DBT_QA key (FACETS_QA)
+    environment: qa                         # -> SVC_DBT_QA key (FACETS_QA)
     env:
       SNOWFLAKE_PRIVATE_KEY_PATH: ./rsa_key.p8
       DBT_PROFILES_DIR: .
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.ref || github.sha }}
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
@@ -48,17 +55,22 @@ jobs:
       - run: dbt debug --target qa
       - run: dbt build --target qa
 
-  # ---------- PROD: gated, only after QA succeeds ----------
+  # ---------- PROD: gated, only after QA; auto-tags each release ----------
   deploy-prod:
     needs: deploy-qa
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
-    environment: production                # -> SVC_DBT_PROD key + approval gate
+    environment: production                 # -> SVC_DBT_PROD key + approval gate
+    permissions:
+      contents: write                       # needed to push the release tag
     env:
       SNOWFLAKE_PRIVATE_KEY_PATH: ./rsa_key.p8
       DBT_PROFILES_DIR: .
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.ref || github.sha }}   # deploy chosen tag, or current
+          fetch-depth: 0                     # full history so tagging works
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
@@ -68,3 +80,11 @@ jobs:
       - run: dbt deps
       - run: dbt debug --target prod
       - run: dbt build --target prod
+      - name: Tag this prod release
+        if: github.event_name == 'push'      # only tag forward deploys, not rollbacks
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          TAG="prod-$(date +'%Y%m%d-%H%M%S')"
+          git tag -a "$TAG" -m "Prod release $TAG"
+          git push origin "$TAG"
