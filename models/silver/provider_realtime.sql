@@ -36,7 +36,7 @@ SELECT
     p.PRPR_TERM_DT                                     AS TERM_DT,
     addr.PRAD_ADDR1                                    AS PRACTICE_ADDR1,
     addr.PRAD_CITY                                     AS PRACTICE_CITY,
-    addr.PRAD_STATE                                    AS PRACTICE_STATE,
+    addr.PRAD_ST                                       AS PRACTICE_STATE,
     addr.PRAD_ZIP                                      AS PRACTICE_ZIP,
     p._SNOWFLAKE_UPDATED_AT                            AS BRONZE_UPDATED_AT,
     p._SNOWFLAKE_DELETED                               AS IS_DELETED
