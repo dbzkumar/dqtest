@@ -1,0 +1,28 @@
+name: Rollback PROD
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to roll back to (e.g. prod-20260811-191926)"
+        required: true
+
+jobs:
+  rollback-prod:
+    runs-on: ubuntu-latest
+    environment: production            # approval gate still applies
+    env:
+      SNOWFLAKE_PRIVATE_KEY_PATH: ./rsa_key.p8
+      DBT_PROFILES_DIR: .
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install "dbt-snowflake==1.8.*"
+      - run: printf '%s' "${{ secrets.SNOWFLAKE_PRIVATE_KEY }}" > ./rsa_key.p8
+      - run: dbt deps
+      - run: dbt debug --target prod
+      - run: dbt build --target prod --full-refresh
