@@ -38,6 +38,16 @@ SELECT
     TERM_DT,
     DUPLICATE_COUNT,
     IS_DELETED,
+    
+    -- Derived column: classify provider risk tier based on network & contract
+    CASE
+        WHEN IS_DELETED = TRUE OR PRPR_STS = 'IN'       THEN 'INACTIVE'
+        WHEN ACTIVE_NETWORK_COUNT = 0                    THEN 'HIGH'
+        WHEN ACTIVE_NETWORK_COUNT = 1 AND TERM_DT IS NOT NULL THEN 'MEDIUM'
+        WHEN ACTIVE_NETWORK_COUNT >= 2 AND IS_PCP_ELIGIBLE   THEN 'LOW'
+        ELSE 'STANDARD'
+    END                         AS PROVIDER_RISK_TIER,
+
     updated_at                  AS BRONZE_UPDATED_AT,
     CURRENT_TIMESTAMP()         AS SILVER_LOADED_AT
 FROM {{ ref('int_prpr_org_hierarchy') }}
