@@ -1,5 +1,5 @@
 -- Real-time provider view using Snowflake dynamic table materialization
--- Co-authored with CoCo
+
 {{ config(
     materialized='dynamic_table',
     target_lag='1 minute',
