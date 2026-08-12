@@ -1,6 +1,7 @@
 # caldemo_dw dbt project
 
-This folder contains a scaffolded dbt project for the `caldemo_dw` workspace. CI TEST
+This folder contains a scaffolded dbt project for the `caldemo_dw` workspace.
+
 
 ## Structure
 
