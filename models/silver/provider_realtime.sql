@@ -1,5 +1,5 @@
 -- Real-time provider view using Snowflake dynamic table materialization
-
+-- Co-authored with CoCo
 {{ config(
     materialized='dynamic_table',
     target_lag='1 minute',
@@ -9,6 +9,7 @@
 /*
   Dynamic table — automatically refreshes within 1 minute of source changes.
   No dbt run needed; Snowflake handles incremental refresh internally.
+
   Use case: near real-time dashboards, APIs, or downstream queries
   that need fresh data without waiting for the dbt task to fire.
 */
