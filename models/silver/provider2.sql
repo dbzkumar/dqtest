@@ -48,6 +48,9 @@ SELECT
         ELSE 'STANDARD'
     END                         AS PROVIDER_RISK_TIER,
 
+    -- Derived column: days since provider was first loaded
+    DATEDIFF('day', updated_at, CURRENT_TIMESTAMP()) AS DAYS_SINCE_LAST_UPDATE,
+
     updated_at                  AS BRONZE_UPDATED_AT,
     CURRENT_TIMESTAMP()         AS SILVER_LOADED_AT
 FROM {{ ref('int_prpr_org_hierarchy') }}
