@@ -34,3 +34,15 @@ models:
       - name: model_description
         description: Phase 1 placeholder — describes Phase 2 implementation intent.
         tests: [not_null]
+        
+  - name: gold_provider_summary
+    description: >
+      Aggregates SILVER.PROVIDER2 by provider type and status. Materialized as
+      table (not view) to support time travel recovery in the break-detect-recover demo.
+    columns:
+      - name: PROVIDER_TYPE
+        description: Provider classification (Individual Type 1, Organization Type 2, etc.)
+      - name: PRPR_STS
+        description: Provider status code
+      - name: provider_count
+        tests: [not_null]
